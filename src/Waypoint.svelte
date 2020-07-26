@@ -1,5 +1,9 @@
+<script context="module">
+  let innerHeight;
+</script>
+
 <script>
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -7,7 +11,7 @@
   export let throttle = 250;
   export let style = '';
   export let once = true;
-  export let threshold = 1.0;
+  export let threshold = 0;
   export let disabled = false;
 
   let className = '';
@@ -53,6 +57,16 @@
     }
   }
 
+  function calculateOffset() {
+    if (typeof innerHeight === 'undefined') {
+      innerHeight = window.innerHeight || document.documentElement.clientHeight;
+    }
+
+    return /vh/.test(offset)
+      ? (parseInt(offset.match(/-?\d*/)[0], 10) / 100) * innerHeight
+      : offset;
+  }
+
   function waypoint(node) {
     if (!window || disabled) return;
 
@@ -60,7 +74,6 @@
       const observer = new IntersectionObserver(
         ([{ isIntersecting }]) => {
           wasVisible = visible;
-
           intersecting = isIntersecting;
 
           if (wasVisible && once && !isIntersecting) {
@@ -73,7 +86,7 @@
           callEvents(wasVisible, observer, node);
         },
         {
-          rootMargin: offset + 'px',
+          rootMargin: `${calculateOffset()}px`,
           threshold,
         }
       );
@@ -82,7 +95,11 @@
 
       removeHandlers = () => observer.unobserve(node);
 
-      return removeHandlers;
+      return {
+        destroy() {
+          removeHandlers();
+        },
+      };
     }
 
     function checkIsVisible() {
@@ -94,6 +111,7 @@
 
       let top;
       let height;
+      const visibleOffset = calculateOffset();
 
       try {
         ({ top, height } = node.getBoundingClientRect());
@@ -101,12 +119,9 @@
         ({ top, height } = defaultBoundingClientRect);
       }
 
-      const windowInnerHeight =
-        window.innerHeight || document.documentElement.clientHeight;
-
       wasVisible = visible;
       intersecting =
-        top - offset <= windowInnerHeight && top + height + offset >= 0;
+        top - visibleOffset <= innerHeight && top + height + visibleOffset >= 0;
 
       if (wasVisible && once && !isIntersecting) {
         callEvents(wasVisible, observer, node);
@@ -130,9 +145,15 @@
       window.removeEventListener('resize', throttled);
     };
 
-    return removeHandlers;
+    return {
+      destroy() {
+        removeHandlers();
+      },
+    };
   }
 </script>
+
+<svelte:window bind:innerHeight />
 
 <div class={className} {style} use:waypoint>
   <slot />
