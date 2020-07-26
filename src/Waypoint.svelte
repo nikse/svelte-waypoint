@@ -5,13 +5,12 @@
 
   export let offset = 0;
   export let throttle = 250;
-  export let c = '';
   export let style = '';
   export let once = true;
   export let threshold = 1.0;
   export let disabled = false;
 
-  let className = "";
+  let className = '';
   export { className as class };
 
   let visible = disabled;
@@ -23,7 +22,7 @@
     let last, deferTimer;
 
     return () => {
-      const now = +new Date;
+      const now = +new Date();
 
       if (last && now < last + time) {
         // hold on to it
@@ -58,23 +57,26 @@
     if (!window || disabled) return;
 
     if (window.IntersectionObserver && window.IntersectionObserverEntry) {
-      const observer = new IntersectionObserver(([ { isIntersecting } ]) => {
-        wasVisible = visible;
+      const observer = new IntersectionObserver(
+        ([{ isIntersecting }]) => {
+          wasVisible = visible;
 
-        intersecting = isIntersecting;
+          intersecting = isIntersecting;
 
-        if (wasVisible && once && !isIntersecting) {
+          if (wasVisible && once && !isIntersecting) {
+            callEvents(wasVisible, observer, node);
+            return;
+          }
+
+          visible = isIntersecting;
+
           callEvents(wasVisible, observer, node);
-          return;
+        },
+        {
+          rootMargin: offset + 'px',
+          threshold,
         }
-
-        visible = isIntersecting;
-
-        callEvents(wasVisible, observer, node);
-      }, {
-        rootMargin: offset + 'px',
-        threshold,
-      });
+      );
 
       observer.observe(node);
 
@@ -85,7 +87,10 @@
 
     function checkIsVisible() {
       // Kudos https://github.com/twobin/react-lazyload/blob/master/src/index.jsx#L93
-      if (!(node.offsetWidth || node.offsetHeight || node.getClientRects().length)) return;
+      if (
+        !(node.offsetWidth || node.offsetHeight || node.getClientRects().length)
+      )
+        return;
 
       let top;
       let height;
@@ -96,12 +101,12 @@
         ({ top, height } = defaultBoundingClientRect);
       }
 
-      const windowInnerHeight = window.innerHeight
-        || document.documentElement.clientHeight;
+      const windowInnerHeight =
+        window.innerHeight || document.documentElement.clientHeight;
 
       wasVisible = visible;
-      intersecting = (top - offset <= windowInnerHeight) &&
-        (top + height + offset >= 0);
+      intersecting =
+        top - offset <= windowInnerHeight && top + height + offset >= 0;
 
       if (wasVisible && once && !isIntersecting) {
         callEvents(wasVisible, observer, node);
@@ -123,20 +128,12 @@
     removeHandlers = () => {
       window.removeEventListener('scroll', throttled);
       window.removeEventListener('resize', throttled);
-    }
+    };
 
     return removeHandlers;
   }
 </script>
 
-<style>
-.wrapper {
-  display: inline-block;
-}
-</style>
-
-<div class="wrapper {className} {c}" {style} use:waypoint>
-  {#if visible}
-    <slot />
-  {/if}
+<div class={className} {style} use:waypoint>
+  <slot />
 </div>
