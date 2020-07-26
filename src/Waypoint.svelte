@@ -111,7 +111,7 @@
 
       let top;
       let height;
-      const visibleOffset = calculateOffset();
+      const offset = calculateOffset();
 
       try {
         ({ top, height } = node.getBoundingClientRect());
@@ -120,8 +120,7 @@
       }
 
       wasVisible = visible;
-      intersecting =
-        top - visibleOffset <= innerHeight && top + height + visibleOffset >= 0;
+      intersecting = top - offset <= innerHeight && top + height + offset >= 0;
 
       if (wasVisible && once && !isIntersecting) {
         callEvents(wasVisible, observer, node);
